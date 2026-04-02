@@ -1,0 +1,68 @@
+services:
+  travel-app:
+    image: 'wordpress:latest'  # 使用最新的 WordPress 映像
+    depends_on:
+      - "db"  # 確保在 WordPress 之前啟動 db 服務
+    env_file: .env  # 從外部文件載入環境變數
+    environment:
+      WORDPRESS_DB_HOST: travel-db  # 資料庫主機，使用服務名稱 'db'
+      WORDPRESS_DB_NAME: '${MARIADB_DATABASE}'  # 資料庫名稱，從環境載入
+      WORDPRESS_DB_USER: '${MARIADB_USER}'  # 資料庫用戶，從環境中載入
+      WORDPRESS_DB_PASSWORD: '${MARIADB_PASSWORD}'  # 資料庫密碼，從環境中載入
+    ports:
+      - "4002:80"  # 將容器的 80 埠映射到主機的 80 埠
+    restart: unless-stopped  # 遇到故障時自動重啟
+    volumes:
+      - 'travel-app:/var/www/html'  # WordPress 檔案的持久存儲
+    networks:
+      - travel-app  # 連接到名為 "travel-app" 的網絡
+        
+  db:
+    container_name: travel-db
+    image: 'mariadb:11.4'  # 使用 MariaDB 版本 11.4
+    env_file: .env  # 從外部文件載入環境變數
+    ports:
+      - '3308:3306'  # 將容器的 3306 埠映射到主機的 3306 埠
+    environment:
+      MARIADB_DATABASE: '${MARIADB_DATABASE}'  # 資料庫名稱
+      MARIADB_USER: '${MARIADB_USER}'  # 資料庫用戶
+      MARIADB_PASSWORD: '${MARIADB_PASSWORD}'  # 資料庫密碼
+      MARIADB_ROOT_PASSWORD: '${MARIADB_ROOT_PASSWORD}'  # 根用戶密碼
+      TZ: 'Etc/GMT+8'  # 設定時區
+    restart: unless-stopped  # 遇到故障時自動重啟
+    volumes:
+      - 'db:/var/lib/mysql'  # MariaDB 檔案的持久存儲
+    networks:
+      - travel-app  # 連接到名為 "travel-app" 的網絡
+
+  travel-phpmyadmin:
+    container_name: travel-phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - '8081:80'  # 本機訪問 http://localhost:8081
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MARIADB_ROOT_PASSWORD: '${MARIADB_ROOT_PASSWORD}'  # 從環境中載入資料庫密碼
+      PMA_VERSION_CHECK_SUPPRESS: '1'
+      PMA_ARBITRARY: 1
+      UPLOAD_LIMIT: 300M
+      MEMORY_LIMIT: 512M      
+      MAX_EXECUTION_TIME: 600 
+      # PMA_PMADB: phpmyadmin
+      PMA_CONTROLHOST: db
+      PHP_MEMORY_LIMIT: 512M   # 增加內存限制
+      PHP_MAX_EXECUTION_TIME: 600
+    depends_on:
+      - db
+    networks:
+      - travel-app
+
+volumes:
+  travel-app: null  # 定義名為 'travel-app' 的儲存區
+  db: null  # 定義名為 'db' 的儲存區
+  
+networks:
+  travel-app:  # 定義名為 "travel-app" 的網絡
+    driver: bridge  # 使用橋接驅動程式定義名為 "travel-app" 的網絡
