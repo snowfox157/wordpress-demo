@@ -14,6 +14,7 @@ services:
     restart: unless-stopped  # 遇到故障時自動重啟
     volumes:
       - 'travel-app:/var/www/html'  # WordPress 檔案的持久存儲
+      - ./wp-content:/var/www/html/wp-content  # 將本地的 wp-content 目錄映射到容器內的 wp-content 目錄，方便開發和持久化內容
     networks:
       - travel-app  # 連接到名為 "travel-app" 的網絡
         
